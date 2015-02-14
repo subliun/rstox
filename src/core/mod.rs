@@ -513,7 +513,7 @@ impl Tox {
         let res = unsafe {
             ll::tox_get_friend_number(&*self.raw, client_id.raw.as_ptr())
         };
-        
+
         some_or_minus!(res)
     }
 
@@ -693,7 +693,6 @@ impl Tox {
     /// Panics if the id is out of the range.
     #[cfg(feature = "packets")]
     pub fn accept_lossy_packets(&mut self, fnum: i32, id: u8) -> Result<(),()> {
-        assert!(id >= 200 && id <= 254, "id is out of range [200, 254]");
         unsafe {
             let chan: *mut c_void = mem::transmute(&mut *self.event_tx);
             let res =
@@ -706,7 +705,6 @@ impl Tox {
     /// the package id and must be in [200, 254].
     #[cfg(feature = "packets")]
     pub fn send_lossy_packet(&mut self, fnum: i32, data: &[u8]) -> Result<(),()> {
-        assert!(data[0] >= 200 && data[0] <= 54, "invalid data slice");
         unsafe {
             ok_or_minus!(ll::tox_send_lossy_packet(self.raw, fnum, data.as_ptr(), data.len() as u32), ())
         }
@@ -716,7 +714,6 @@ impl Tox {
     /// Panics if the id is out of the range.
     #[cfg(feature = "packets")]
     pub fn accept_lossless_packets(&mut self, fnum: i32, id: u8) -> Result<(),()> {
-        assert!(id >= 160 && id <= 191, "id is out of range [160, 191]");
         unsafe {
             let chan: *mut c_void = mem::transmute(&mut *self.event_tx);
             let res =
@@ -729,7 +726,6 @@ impl Tox {
     /// the package id and must be in [160, 191].
     #[cfg(feature = "packets")]
     pub fn send_lossless_packet(&mut self, fnum: i32, data: &[u8]) -> Result<(),()> {
-        assert!(data[0] >= 200 && data[0] <= 54, "invalid data slice");
         unsafe {
             ok_or_minus!(ll::tox_send_lossless_packet(self.raw, fnum, data.as_ptr(), data.len() as u32), ())
         }
@@ -1063,7 +1059,7 @@ extern fn on_read_receipt(_: *mut ll::Tox, friendnumber: i32, receipt: u32, chan
 }
 
 extern fn on_connection_status(_: *mut ll::Tox, friendnumber: i32, status: u8, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let status = match status {
         1 => ConnectionStatus::Online,
         _ => ConnectionStatus::Offline,
@@ -1071,7 +1067,7 @@ extern fn on_connection_status(_: *mut ll::Tox, friendnumber: i32, status: u8, c
     tx.send(ConnectionStatusVar(friendnumber, status)).unwrap();
 }
 
-extern fn on_group_invite(_: *mut ll::Tox, friendnumber: i32, ty: u8, data: *const u8, 
+extern fn on_group_invite(_: *mut ll::Tox, friendnumber: i32, ty: u8, data: *const u8,
         length: u16, chan: *mut c_void) {
     let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let data = unsafe {
@@ -1094,14 +1090,14 @@ extern fn on_group_message(_: *mut ll::Tox, groupnumber: i32, frindgroupnumber: 
 
 extern fn on_group_action(_: *mut ll::Tox, groupnumber: i32, frindgroupnumber: i32,
         action: *const u8, len: u16, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let action = parse_string!(action, len);
     tx.send(GroupMessage(groupnumber, frindgroupnumber, action)).unwrap();
 }
 
 extern fn on_group_namelist_change(_: *mut ll::Tox, groupnumber: i32, peernumber: i32,
         change: u8, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let change = match change as u32 {
         ll::TOX_CHAT_CHANGE_PEER_ADD => ChatChange::PeerAdd,
         ll::TOX_CHAT_CHANGE_PEER_DEL => ChatChange::PeerDel,
@@ -1127,7 +1123,7 @@ extern fn on_file_send_request(_: *mut ll::Tox, friendnumber: i32, filenumber: u
 
 extern fn on_file_control(_: *mut ll::Tox, friendnumber: i32, receive_send: u8,
         filenumber: u8, control_type: u8, data: *const u8, len: u16, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let ty = match control_type as u32 {
         ll::TOX_FILECONTROL_ACCEPT        => ControlType::Accept,
         ll::TOX_FILECONTROL_PAUSE         => ControlType::Pause,
@@ -1147,14 +1143,14 @@ extern fn on_file_control(_: *mut ll::Tox, friendnumber: i32, receive_send: u8,
 
 extern fn on_file_data(_: *mut ll::Tox, friendnumber: i32, filenumber: u8, data: *const u8,
         len: u16, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let data = unsafe { slice::from_raw_parts(data, len as usize).to_vec() };
     tx.send(FileData(friendnumber, filenumber, data)).unwrap();
 }
 
 extern fn on_avatar_info(_: *mut ll::Tox, friendnumber: i32, format: u8, hash: *mut u8,
         chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let format = match format as c_uint {
         ll::TOX_AVATAR_FORMAT_NONE => AvatarFormat::None,
         ll::TOX_AVATAR_FORMAT_PNG  => AvatarFormat::PNG,
@@ -1166,7 +1162,7 @@ extern fn on_avatar_info(_: *mut ll::Tox, friendnumber: i32, format: u8, hash: *
 
 extern fn on_avatar_data(_: *mut ll::Tox, friendnumber: i32, format: u8, hash: *mut u8,
         data: *mut u8, datalen: u32, chan: *mut c_void) {
-    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };    
+    let tx = unsafe { mem::transmute::<_, &mut Sender<Event>>(chan) };
     let format = match format as c_uint {
         ll::TOX_AVATAR_FORMAT_NONE => AvatarFormat::None,
         ll::TOX_AVATAR_FORMAT_PNG  => AvatarFormat::PNG,
